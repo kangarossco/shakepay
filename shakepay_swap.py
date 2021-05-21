@@ -42,8 +42,8 @@ def current_csv():
         if os.path.splitext(x)[0][:20] == 'transactions_summary':
             only_summaries.append(csv)
             try:
-                if int(csv.split("(")[1][:1]) > max:
-                    max = int(csv.split("(")[1][:1])
+                if int(csv.split("(")[1][:].split(")")[0]) > max:
+                    max = int(csv.split("(")[1][:].split(")")[0])
                     version = " (" + str(max) + ")"
             except:
                 pass
@@ -110,6 +110,8 @@ for trans_num in range(len(transactions)):
 df_dict = {"shake_tag" : tag_list, "amount" : amount_list, "message" : message_list}
 df = pd.DataFrame(df_dict)
 
+#df.index = df.index - timedelta(hours=4)
+
 #get rid of all non-swap rows (if you get an ethereum transfer that'll have to be added)
 df = df[df.shake_tag != '@shakingsats']
 df = df[df.shake_tag != 'Interac e-Transfer']
@@ -137,6 +139,7 @@ df2 = df2.iloc[::-1]
 #bring over the time data and set index
 df["Time"] = list(df2["Date"])
 df = df.set_index('Time')
+df.index = df.index - timedelta(hours=4)
 
 #group all shake_tags and add them together, if all debts have been repaid it should sum to zero
 group = df.groupby('shake_tag')
@@ -169,6 +172,7 @@ print("\n5 Most Frequent Swappers\n{}".format(df['shake_tag'].value_counts().hea
 
 #todays shakes
 df_today = df[str(datetime.date.today())]
+todays_swappers_abc = sorted(df_today.shake_tag.unique().tolist())
 
 #person lookup
 #df.loc[df['shake_tag'] == '@blessed1963']
@@ -178,11 +182,11 @@ len(df_today['shake_tag'].unique())
 
 #from datetime import datetime, timedelta
 #last 24 hours
-d = str(datetime.date.today() - timedelta(hours=24))
+d = str(datetime.datetime.now() - timedelta(hours=24))
 
 new_swappers = df.loc[:d]['shake_tag'].unique() #only unique swappers from last 24 hours
 old_swappers = df.loc[d:]['shake_tag'].unique() #all unique swappers up to 24 hours ago
-new_recent_swappers = [e for e in new_swappers if e not in old_swappers] #unique new swappers
+new_recent_swappers = [x for x in new_swappers if x not in old_swappers] #unique new swappers
 
 #make a bar graph for most frequent swappers with @kangarossco
 counts = df['shake_tag'].value_counts()
