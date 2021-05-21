@@ -17,17 +17,22 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import numpy as np
 import datetime
+from datetime import timedelta
+
 import glob
 import os
 import matplotlib.pyplot as plt
 
+
+
 #Current_csv function. Goes through downloads folder and returns the transactions_summary csv with the highest version number
 #should work for any user as long as the transaction_summary csv is in the downloads folder on a windows machine
 def current_csv():
+    
     file_string = r"C:\Users\\" + os.getlogin() + "\downloads\*.csv"
-
-    search_string = os.path.join(file_string)
-    all_summaries = glob.glob(search_string)
+    
+    search_path = os.path.join(file_string)
+    all_summaries = glob.glob(search_path)
     
     only_summaries = []
     max = 0
@@ -51,7 +56,7 @@ def current_csv():
     return r"C:\Users\Ross\downloads\transactions_summary" + version + ".csv"
 
 #the filepath is where the html code is saved, file suffix doesn't matter as long as it can be read
-filepath = r"Q:\Automation\Python Scripts\For GITHUB\Shakepay\shakepay_wallets_html.txt"
+filepath = r"Q:\Automation\Python Scripts\Github\Shakepay\shakepay_wallets_html.txt"
 
 f = open(filepath, encoding="utf8")
 soup = BeautifulSoup(f, 'html.parser')
@@ -112,6 +117,7 @@ df = df[df.shake_tag != 'shakepay']
 df = df[df.shake_tag != 'Bitcoin Blockchain']
 
 #import the dataframe from the transaction data and pair with webscrapped data
+#if you aren't you usind windows or don't keep the filepath in the downloads folder change here
 filepath = current_csv()
 df2 = pd.read_csv(filepath, parse_dates=['Date'])
 
@@ -162,13 +168,21 @@ print("\nTotal trades made: {}".format(int(len(df)/2)))
 print("\n5 Most Frequent Swappers\n{}".format(df['shake_tag'].value_counts().head()))
 
 #todays shakes
-#df_today = df[str(datetime.date.today())]
+df_today = df[str(datetime.date.today())]
 
 #person lookup
 #df.loc[df['shake_tag'] == '@blessed1963']
 
 #number of unique swappers today
-#len(df_today['shake_tag'].unique())
+len(df_today['shake_tag'].unique())
+
+#from datetime import datetime, timedelta
+#last 24 hours
+d = str(datetime.date.today() - timedelta(hours=24))
+
+new_swappers = df.loc[:d]['shake_tag'].unique() #only unique swappers from last 24 hours
+old_swappers = df.loc[d:]['shake_tag'].unique() #all unique swappers up to 24 hours ago
+new_recent_swappers = [e for e in new_swappers if e not in old_swappers] #unique new swappers
 
 #make a bar graph for most frequent swappers with @kangarossco
 counts = df['shake_tag'].value_counts()
@@ -178,16 +192,18 @@ fig, ax = plt.subplots()
 plt.xticks(rotation=45, ha='right', fontsize=15)
 plt.yticks(fontsize=15)
 
-x1 = df['shake_tag'].value_counts()[:25].index
-y1 = df['shake_tag'].value_counts()[:25]
+#how big is the chart?!
+top_people = 30
+x1 = df['shake_tag'].value_counts()[:top_people].index
+y1 = df['shake_tag'].value_counts()[:top_people]
 
 ax.bar(x1,y1, color="indigo")
 ax.set_yticks(y1)
 ax.set_xlabel('Shake Tag', fontsize=25)
 ax.set_ylabel('Swaps with @kangarossco', fontsize=25)
-ax.set_title("Top 25 people that have swapped with @kangarossco", fontsize=40)
+ax.set_title("Top {} people that have swapped with @kangarossco".format(top_people), fontsize=40)
 
-legend_string = "Swapped with {} unique people.\n{} total swaps".format(swappers,int(len(df)/2))
-plt.annotate(legend_string, xy=(0.70, 0.90), xycoords='axes fraction', fontsize=25)
+legend_string = "Swapped with {} unique people.\n{} new swappers last 24 hours.\n{} total swaps.".format(swappers,len(new_recent_swappers),int(len(df)/2))
+plt.annotate(legend_string, xy=(0.70, 0.85), xycoords='axes fraction', fontsize=25)
 
 plt.show()
