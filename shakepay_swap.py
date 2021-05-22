@@ -175,7 +175,7 @@ df_today = df[str(datetime.date.today())]
 todays_swappers_abc = sorted(df_today.shake_tag.unique().tolist())
 
 #person lookup
-#df.loc[df['shake_tag'] == '@blessed1963']
+df.loc[df['shake_tag'] == '@melystorm'].drop('message', axis=1)
 
 #number of unique swappers today
 len(df_today['shake_tag'].unique())
@@ -189,8 +189,8 @@ old_swappers = df.loc[d:]['shake_tag'].unique() #all unique swappers up to 24 ho
 new_recent_swappers = [x for x in new_swappers if x not in old_swappers] #unique new swappers
 
 #make a bar graph for most frequent swappers with @kangarossco
-counts = df['shake_tag'].value_counts()
-
+#counts = df['shake_tag'].value_counts()
+"""
 fig, ax = plt.subplots()
 
 plt.xticks(rotation=45, ha='right', fontsize=15)
@@ -201,7 +201,7 @@ top_people = 30
 x1 = df['shake_tag'].value_counts()[:top_people].index
 y1 = df['shake_tag'].value_counts()[:top_people]
 
-ax.bar(x1,y1, color="indigo")
+ax.bar(x1,y1, color="red")
 ax.set_yticks(y1)
 ax.set_xlabel('Shake Tag', fontsize=25)
 ax.set_ylabel('Swaps with @kangarossco', fontsize=25)
@@ -211,3 +211,60 @@ legend_string = "Swapped with {} unique people.\n{} new swappers last 24 hours.\
 plt.annotate(legend_string, xy=(0.70, 0.85), xycoords='axes fraction', fontsize=25)
 
 plt.show()
+"""
+################################################################
+#new graph
+df2 = df.reset_index(level=0)
+df2['day'] = df2['Time'].dt.date
+df2.drop_duplicates(subset=['shake_tag', 'amount','day'], keep='last', inplace=True)
+df2 = df2.set_index('Time')
+df2.drop(['message','day'], axis=1, inplace=True)
+
+counts = df['shake_tag'].value_counts()
+counts2 = df2['shake_tag'].value_counts()
+result = pd.concat([counts, counts2], axis=1)
+result.columns = ['inital', 'actual']
+result['difference'] = result['inital'] - result['actual']
+
+fig, ax = plt.subplots()
+
+#how big is the chart?!
+top_people = 30
+x1 = df2['shake_tag'].value_counts()[:top_people].index
+y1 = df2['shake_tag'].value_counts()[:top_people]
+
+y2 = result['difference'][:top_people]
+
+
+x1.values[0] = "@" + len(x1[0]) * "*"
+"""
+for x in range(len(x1)):
+    if len(x1[x]) > 6:
+        stars = "*" * len(x1[x][-5:-1])
+        x1.values[x] = x1[x][:-4] + stars
+    else:
+        stars = "*" * len(x1[x][-3:-1])
+        x1.values[x] = x1[x][:-2] + stars
+"""        
+
+ax.bar(x1,y1, color="indigo", label="good swaps")
+ax.bar(x1,y2, bottom=y1, color="gray", label="swaps resulting in no points")
+
+plt.xticks(rotation=45, ha='right', fontsize=15)
+plt.yticks(fontsize=15)
+plt.ylim(0,y1[0]+5)
+
+#ax.set_ylim([0,y1+5])
+ax.set_yticks(y1)
+ax.set_xlabel('Shake Tag', fontsize=25)
+ax.set_ylabel('Swaps with @kangarossco', fontsize=25)
+ax.set_title("Top {} people that have swapped with @kangarossco".format(top_people), fontsize=40)
+
+legend_string = "@kangarossco\nSwapped with {} unique people.\n{} new swappers last 24 hours.\n{} total swaps.".format(swappers,len(new_recent_swappers),int(len(df)/2))
+plt.annotate(legend_string, xy=(0.25, 0.83), xycoords='axes fraction', fontsize=25)
+
+ax.legend(loc="upper right", prop={'size': 25})
+
+plt.show()
+
+
