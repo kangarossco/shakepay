@@ -23,11 +23,9 @@ import glob
 import os
 import matplotlib.pyplot as plt
 
-
-
-#Current_csv function. Goes through downloads folder and returns the transactions_summary csv with the highest version number
+#latest_csv function. Goes through downloads folder and returns the transactions_summary csv with the highest version number
 #should work for any user as long as the transaction_summary csv is in the downloads folder on a windows machine
-def current_csv():
+def latest_csv():
     
     file_string = r"C:\Users\\" + os.getlogin() + "\downloads\*.csv"
     
@@ -54,6 +52,71 @@ def current_csv():
         version = ""
 
     return r"C:\Users\Ross\downloads\transactions_summary" + version + ".csv"
+
+def censor_namelist(series):
+    pass
+
+
+def top_swappers(top_people):
+    fig, ax = plt.subplots()
+
+    x1 = df2['shake_tag'].value_counts()[:top_people].index
+    y1 = df2['shake_tag'].value_counts()[:top_people]
+    
+    y2 = result['difference'][:top_people]
+    x1.values[0] = "@" + len(x1[0]) * "*"
+       
+    ax.bar(x1,y1, color="indigo", label="good swaps")
+    ax.bar(x1,y2, bottom=y1, color="gray", label="swaps resulting in no points")
+
+    plt.xticks(rotation=45, ha='right', fontsize=15)
+    plt.yticks(fontsize=15)
+    plt.ylim(0,y1[0]+5)
+
+    ax.set_yticks(y1)
+    ax.set_xlabel('Shake Tag', fontsize=25)
+    ax.set_ylabel('Swaps with @kangarossco', fontsize=25)
+    ax.set_title("Top {} people that have swapped with @kangarossco".format(top_people), fontsize=40)
+
+    legend_string = "@kangarossco\nSwapped with {} unique people.\n{} new swappers last 24 hours.\n{} total swaps.".format(swappers,len(new_recent_swappers),int(len(df)/2))
+    plt.annotate(legend_string, xy=(0.25, 0.83), xycoords='axes fraction', fontsize=25)
+
+    ax.legend(loc="upper right", prop={'size': 25})
+
+    figure = plt.gcf()
+
+    figure.set_size_inches(30, 15)
+    figure.subplots_adjust(bottom=0.2)
+    plt.savefig("top_swappers.png", dpi=100)
+
+def top_wasters(top_people):
+    fig, ax = plt.subplots()
+
+    result.drop(result[result['difference']==0].index, inplace=True)
+    top_people = len(result)
+
+    x1 = result.sort_values('difference', ascending=False)[:top_people].index
+    y1 = result.sort_values('difference', ascending=False)['difference'][:top_people]
+
+    ax.bar(x1,y1, color="grey", label="wasted swaps")
+
+    plt.xticks(rotation=45, ha='right', fontsize=15)
+    plt.yticks(fontsize=15)
+    plt.ylim(0,y1[0]+5)
+
+    ax.set_yticks(y1)
+    ax.set_xlabel('Shake Tag', fontsize=25)
+    ax.set_ylabel('Swaps with @kangarossco', fontsize=25)
+    ax.set_title("{} people that send duplicates with @kangarossco".format(top_people), fontsize=40)
+
+    ax.legend(loc="upper right", prop={'size': 25})
+
+    figure = plt.gcf()
+    figure.set_size_inches(30, 15)
+    figure.subplots_adjust(bottom=0.2)
+    
+    plt.savefig("top_wasters.png", dpi=100)
+
 
 #the filepath is where the html code is saved, file suffix doesn't matter as long as it can be read
 filepath = r"Q:\Automation\Python Scripts\Github\Shakepay\shakepay_wallets_html.txt"
@@ -120,7 +183,7 @@ df = df[df.shake_tag != 'Bitcoin Blockchain']
 
 #import the dataframe from the transaction data and pair with webscrapped data
 #if you aren't you usind windows or don't keep the filepath in the downloads folder change here
-filepath = current_csv()
+filepath = latest_csv()
 df2 = pd.read_csv(filepath, parse_dates=['Date'])
 
 #remove all rows that aren't in swaps
@@ -168,12 +231,14 @@ else:
 print("\nTotal trades made: {}".format(int(len(df)/2)))
 
 #who did I trade most with?
-print("\n5 Most Frequent Swappers\n{}".format(df['shake_tag'].value_counts().head()))
+#print("\n5 Most Frequent Swappers\n{}".format(df['shake_tag'].value_counts().head()))
 
 #todays shakes
 df_today = df[str(datetime.date.today())]
 todays_swappers_abc = sorted(df_today.shake_tag.unique().tolist())
 
+
+print("{} different swappers today:\n{}".format(len(todays_swappers_abc), todays_swappers_abc))
 #person lookup
 df.loc[df['shake_tag'] == '@melystorm'].drop('message', axis=1)
 
@@ -188,30 +253,11 @@ new_swappers = df.loc[:d]['shake_tag'].unique() #only unique swappers from last 
 old_swappers = df.loc[d:]['shake_tag'].unique() #all unique swappers up to 24 hours ago
 new_recent_swappers = [x for x in new_swappers if x not in old_swappers] #unique new swappers
 
+
+
 #make a bar graph for most frequent swappers with @kangarossco
 #counts = df['shake_tag'].value_counts()
-"""
-fig, ax = plt.subplots()
 
-plt.xticks(rotation=45, ha='right', fontsize=15)
-plt.yticks(fontsize=15)
-
-#how big is the chart?!
-top_people = 30
-x1 = df['shake_tag'].value_counts()[:top_people].index
-y1 = df['shake_tag'].value_counts()[:top_people]
-
-ax.bar(x1,y1, color="red")
-ax.set_yticks(y1)
-ax.set_xlabel('Shake Tag', fontsize=25)
-ax.set_ylabel('Swaps with @kangarossco', fontsize=25)
-ax.set_title("Top {} people that have swapped with @kangarossco".format(top_people), fontsize=40)
-
-legend_string = "Swapped with {} unique people.\n{} new swappers last 24 hours.\n{} total swaps.".format(swappers,len(new_recent_swappers),int(len(df)/2))
-plt.annotate(legend_string, xy=(0.70, 0.85), xycoords='axes fraction', fontsize=25)
-
-plt.show()
-"""
 ################################################################
 #new graph
 df2 = df.reset_index(level=0)
@@ -226,45 +272,8 @@ result = pd.concat([counts, counts2], axis=1)
 result.columns = ['inital', 'actual']
 result['difference'] = result['inital'] - result['actual']
 
-fig, ax = plt.subplots()
+top_swappers(30)
+top_wasters(100)
 
-#how big is the chart?!
-top_people = 30
-x1 = df2['shake_tag'].value_counts()[:top_people].index
-y1 = df2['shake_tag'].value_counts()[:top_people]
-
-y2 = result['difference'][:top_people]
-
-
-x1.values[0] = "@" + len(x1[0]) * "*"
-"""
-for x in range(len(x1)):
-    if len(x1[x]) > 6:
-        stars = "*" * len(x1[x][-5:-1])
-        x1.values[x] = x1[x][:-4] + stars
-    else:
-        stars = "*" * len(x1[x][-3:-1])
-        x1.values[x] = x1[x][:-2] + stars
-"""        
-
-ax.bar(x1,y1, color="indigo", label="good swaps")
-ax.bar(x1,y2, bottom=y1, color="gray", label="swaps resulting in no points")
-
-plt.xticks(rotation=45, ha='right', fontsize=15)
-plt.yticks(fontsize=15)
-plt.ylim(0,y1[0]+5)
-
-#ax.set_ylim([0,y1+5])
-ax.set_yticks(y1)
-ax.set_xlabel('Shake Tag', fontsize=25)
-ax.set_ylabel('Swaps with @kangarossco', fontsize=25)
-ax.set_title("Top {} people that have swapped with @kangarossco".format(top_people), fontsize=40)
-
-legend_string = "@kangarossco\nSwapped with {} unique people.\n{} new swappers last 24 hours.\n{} total swaps.".format(swappers,len(new_recent_swappers),int(len(df)/2))
-plt.annotate(legend_string, xy=(0.25, 0.83), xycoords='axes fraction', fontsize=25)
-
-ax.legend(loc="upper right", prop={'size': 25})
-
-plt.show()
 
 
