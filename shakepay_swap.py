@@ -23,6 +23,9 @@ import glob
 import os
 import matplotlib.pyplot as plt
 
+import pytz
+from pytz import timezone
+
 #latest_csv function. Goes through downloads folder and returns the transactions_summary csv with the highest version number
 #should work for any user as long as the transaction_summary csv is in the downloads folder on a windows machine
 def latest_csv():
@@ -53,18 +56,19 @@ def latest_csv():
 
     return r"C:\Users\Ross\downloads\transactions_summary" + version + ".csv"
 
-def censor_namelist(series):
-    pass
-
-
 def top_swappers(top_people):
+    #top_people = 30
+
     fig, ax = plt.subplots()
 
     x1 = df2['shake_tag'].value_counts()[:top_people].index
     y1 = df2['shake_tag'].value_counts()[:top_people]
-    
+
     y2 = result['difference'][:top_people]
-    x1.values[0] = "@" + len(x1[0]) * "*"
+
+    #x1.values[0] = "@" + len(x1[0]) * "*"
+    for x in range(len(x1)):
+        x1.values[x] = x1.values[x][:4] + "*" * (len(x1.values[x])-3)
        
     ax.bar(x1,y1, color="indigo", label="good swaps")
     ax.bar(x1,y2, bottom=y1, color="gray", label="swaps resulting in no points")
@@ -116,6 +120,34 @@ def top_wasters(top_people):
     figure.subplots_adjust(bottom=0.2)
     
     plt.savefig("top_wasters.png", dpi=100)
+
+def daily_swap_graph():
+    fig, ax = plt.subplots()
+
+    x1 = daily_swaps.index[::1]
+    y1 = daily_swaps
+
+    ax.bar(x1,y1, color="grey")
+
+    dates = daily_swaps.index[::1]
+    labels = dates.strftime('%D')
+
+    plt.xticks(dates, labels, rotation = 45, ha='right', fontsize=15)
+    plt.yticks(fontsize=15)
+
+    #ax.set_yticks(y1)
+    ax.set_xlabel('Date', fontsize=25)
+    ax.set_ylabel('# of Swaps', fontsize=25)
+    #ax.set_title("{} people that send duplicates with @kangarossco".format(top_people), fontsize=40)
+
+    ax.legend(loc="upper right", prop={'size': 25})
+
+    figure = plt.gcf()
+    figure.set_size_inches(30, 15)
+    figure.subplots_adjust(bottom=0.2)
+
+    plt.savefig("daily_swaps.png", dpi=100)
+
 
 
 #the filepath is where the html code is saved, file suffix doesn't matter as long as it can be read
@@ -234,7 +266,14 @@ print("\nTotal trades made: {}".format(int(len(df)/2)))
 #print("\n5 Most Frequent Swappers\n{}".format(df['shake_tag'].value_counts().head()))
 
 #todays shakes
-df_today = df[str(datetime.date.today())]
+
+
+
+utc = pytz.utc
+eastern = timezone('US/Eastern')
+
+df_today = df[str(datetime.datetime.now(tz=utc).astimezone(eastern).date())]
+#df_today = df[str(datetime.date.today())]
 todays_swappers_abc = sorted(df_today.shake_tag.unique().tolist())
 
 
@@ -253,8 +292,6 @@ new_swappers = df.loc[:d]['shake_tag'].unique() #only unique swappers from last 
 old_swappers = df.loc[d:]['shake_tag'].unique() #all unique swappers up to 24 hours ago
 new_recent_swappers = [x for x in new_swappers if x not in old_swappers] #unique new swappers
 
-
-
 #make a bar graph for most frequent swappers with @kangarossco
 #counts = df['shake_tag'].value_counts()
 
@@ -272,8 +309,10 @@ result = pd.concat([counts, counts2], axis=1)
 result.columns = ['inital', 'actual']
 result['difference'] = result['inital'] - result['actual']
 
+daily_swaps = df.resample('D')['shake_tag'].count()
+
+#plot creating functions
 top_swappers(30)
 top_wasters(100)
-
-
+daily_swap_graph()
 
