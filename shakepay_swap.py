@@ -56,7 +56,7 @@ def latest_csv():
 
     return r"C:\Users\Ross\downloads\transactions_summary" + version + ".csv"
 
-def top_swappers(top_people):
+def top_swappers(top_people, censor=False):
     #top_people = 30
 
     fig, ax = plt.subplots()
@@ -67,8 +67,9 @@ def top_swappers(top_people):
     y2 = result['difference'][:top_people]
 
     #x1.values[0] = "@" + len(x1[0]) * "*"
-    for x in range(len(x1)):
-        x1.values[x] = x1.values[x][:4] + "*" * (len(x1.values[x])-3)
+    if censor == True:
+        for x in range(len(x1)):
+            x1.values[x] = x1.values[x][:4] + "*" * (len(x1.values[x])-3)
        
     ax.bar(x1,y1, color="indigo", label="good swaps")
     ax.bar(x1,y2, bottom=y1, color="gray", label="swaps resulting in no points")
@@ -242,7 +243,7 @@ agg = group.aggregate({'amount': np.sum})
 
 #how many unique shake_tags have you interacted with?
 swappers = len(df['shake_tag'].unique())
-print("You've traded with {} different people! {} to go till diamond paddle!".format(swappers,500 - swappers))
+print("@kangarossco\nYou've traded with {} different people!\n{} to go till diamond paddle!".format(swappers,500 - swappers))
 
 #and... check it:
 print("\nYou owe these people:")
@@ -254,6 +255,25 @@ else:
 
 print("\nThese people owe you:")
 creditors = agg[agg.amount < 0]
+
+#timezones, reset happens at 1:00am atlantic (midnight eastern) find only shakes for the relevant day
+utc = pytz.utc
+eastern = timezone('US/Eastern')
+df_today = df[str(datetime.datetime.now(tz=utc).astimezone(eastern).date())]
+
+#how long has money been owed, time delta has to be converted to a string to get a cleaner output
+sincewhen = []
+for x in range(len(creditors)):
+    temp = df.loc[df['shake_tag'] == creditors.index[x]].drop('message', axis=1).index[0]
+    sincewhen.append(str(datetime.datetime.now(tz=utc) - timedelta(hours=4) - temp).split(".")[0])
+
+#I don't know why, but this bit of code throws warnings
+#if you want to screen shot the output to share, uncomment the disable warnings code
+#import warnings
+#warnings.filterwarnings("ignore")
+
+creditors.loc[:,'owed_for'] = sincewhen
+    
 if creditors.empty:
     print("no credits")
 else:
@@ -265,21 +285,11 @@ print("\nTotal trades made: {}".format(int(len(df)/2)))
 #who did I trade most with?
 #print("\n5 Most Frequent Swappers\n{}".format(df['shake_tag'].value_counts().head()))
 
-#todays shakes
-
-
-
-utc = pytz.utc
-eastern = timezone('US/Eastern')
-
-df_today = df[str(datetime.datetime.now(tz=utc).astimezone(eastern).date())]
-#df_today = df[str(datetime.date.today())]
 todays_swappers_abc = sorted(df_today.shake_tag.unique().tolist())
-
-
 print("{} different swappers today:\n{}".format(len(todays_swappers_abc), todays_swappers_abc))
+
 #person lookup
-df.loc[df['shake_tag'] == '@melystorm'].drop('message', axis=1)
+#df.loc[df['shake_tag'] == '@melystorm'].drop('message', axis=1)
 
 #number of unique swappers today
 len(df_today['shake_tag'].unique())
@@ -307,12 +317,21 @@ counts = df['shake_tag'].value_counts()
 counts2 = df2['shake_tag'].value_counts()
 result = pd.concat([counts, counts2], axis=1)
 result.columns = ['inital', 'actual']
-result['difference'] = result['inital'] - result['actual']
+result.loc[:,'difference'] = result['inital'] - result['actual']
+#result['difference'] = result['inital'] - result['actual']
 
 daily_swaps = df.resample('D')['shake_tag'].count()
 
 #plot creating functions
-top_swappers(30)
+top_swappers(30,censor=True)
 top_wasters(100)
 daily_swap_graph()
 
+daily__trusted_swap_list = [
+    '@abdihakim2020', '@acemic', '@akinos', '@alexinchains', '@alexmandu', '@alsul', '@andy514', '@anguyen4', '@average', '@bbluephoenixx',
+    '@bitparadise', '@blackdogs', '@blazars', '@blessed1963', '@bmaninc', '@carlysunlit', '@chadha', '@charlc', '@corporatekid', '@criz',
+    '@cryptopanda', '@daniboy077', '@ddcazes', '@dhanadhan', '@domi167', '@dylanfrankcom', '@empir3333', '@erikbloo', '@fuzzywoolhat', '@goofer',
+    '@hallamscrilla420', '@heizz', '@hugy31', '@jaafortune', '@jasontowsley', '@jayjay84', '@jeanvjean', '@jesseyob', '@jessiepp', '@jetsetter',
+    '@juicytin', '@kanesteroojuice', '@kchung', '@kkac', '@lowlowlow', '@maxbrisson', '@melystorm', '@nasra', '@nbelanger', '@nlsajor', '@nneto',
+    '@philm', '@redstallion1337', '@shakemepay', '@shakepaton', '@shakepong', '@skinny78', '@somiadow', '@stmich', '@systemcrash', '@terbearyyc',
+    '@ulufulu', '@vneto', '@xdavelavoiex']
