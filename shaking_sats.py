@@ -25,6 +25,9 @@ import glob
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
+import PIL
+import random
+
 #assume the transactions_summary is in the downloads folder
 #this function will return the most recent one
 def current_csv():
@@ -57,6 +60,7 @@ def current_csv():
 def plot_images(x, y, image, ax=None):
     ax = ax or plt.gca()
     for xi, yi in zip(x,y):
+        #image = image.rotate(randrange(360))
         im = OffsetImage(image, zoom=72/ax.figure.dpi)
         im.image.axes = ax
         ab = AnnotationBbox(im, (xi,yi), frameon=False, pad=0.0,)
@@ -66,7 +70,7 @@ def plot_images(x, y, image, ax=None):
 filepath = current_csv()
 df = pd.read_csv(filepath, index_col=['Date'], parse_dates=['Date'])
 
-#turn right side up
+#turn dataframe right side up
 df = df.iloc[::-1]
 
 #only keep rows without the bad data
@@ -91,20 +95,27 @@ labels = dates.strftime('%D')
 
 x1 = df.index
 y1 = df['sats']
-
-plt.xticks(dates, labels, rotation = 45)
     
+fontsize = 40
+plt.title("@kangarossco's #ShakingSats rewards", fontsize=fontsize)    
+ax.set_xlabel('Date', fontsize=fontsize)
+ax.set_ylabel('Satoshis', fontsize=fontsize)
+plt.xticks(dates, labels, rotation=45, fontsize=fontsize*.4)
+
 # zip joins x and y coordinates in pairs, keep the labels a little up and to the right of each point (leave room for egg picture)
 for x,y in zip(x1,y1):
     label = "{:.0f}".format(y)
-    plt.annotate(label,(x,y), textcoords="offset points", xytext=(-25,35), ha='center')
-    
-ax.set_xlabel('Date')
-ax.set_ylabel('Satoshis')
+    plt.annotate(label,(x,y), textcoords="offset points", xytext=(-25,35), ha='center',fontsize=18)
 
 ax.plot(x1,y1)
 
 #add egg images to plot
 plot_images(x1, y1, image, ax=ax)
 
-plt.show()
+#plt.show()
+
+figure = plt.gcf()
+figure.set_size_inches(30, 15)
+figure.subplots_adjust(bottom=0.2)
+
+plt.savefig("shaking_sats_eggs.png")
