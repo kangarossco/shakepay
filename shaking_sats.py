@@ -25,9 +25,6 @@ import glob
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
-import PIL
-import random
-
 #assume the transactions_summary is in the downloads folder
 #this function will return the most recent one
 def current_csv():
@@ -60,7 +57,6 @@ def current_csv():
 def plot_images(x, y, image, ax=None):
     ax = ax or plt.gca()
     for xi, yi in zip(x,y):
-        #image = image.rotate(randrange(360))
         im = OffsetImage(image, zoom=72/ax.figure.dpi)
         im.image.axes = ax
         ab = AnnotationBbox(im, (xi,yi), frameon=False, pad=0.0,)
@@ -98,7 +94,7 @@ y1 = df['sats']
     
 fontsize = 40
 plt.title("@kangarossco's #ShakingSats rewards", fontsize=fontsize)    
-ax.set_xlabel('Date', fontsize=fontsize)
+#ax.set_xlabel('Date', fontsize=fontsize)   #obvious information
 ax.set_ylabel('Satoshis', fontsize=fontsize)
 plt.xticks(dates, labels, rotation=45, fontsize=fontsize*.4)
 
